@@ -1,0 +1,63 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © abdallah-jawad
+
+//@version=4
+strategy("ATR Trailing Stop Strategy", overlay=true)
+
+
+ATR_Period = 5
+ATR_Factor = 3.5
+
+HiLo = min(high - low, 1.5 * avg(high - low, ATR_Period))
+HRef = 0
+LRef = 0
+
+if low <= high[1]
+    HRef := high - close[1]
+else
+    HRef := (high - close[1]) - 0.5 * (low - high[1])
+    
+if high >= low[1]
+    LRef := close[1] - low
+else
+    LRef := (close[1] - low) - 0.5 * (low[1] - high)
+
+trueRange = max(HiLo, max(HRef, LRef))
+
+//float wild[] = nz(wild[1])+(trueRange-nz(wild[1]))/ATR_Period
+
+loss = ATR_Factor * sma(trueRange, ATR_Period)
+
+// 0 init, 1 long, 2 short
+state = 0
+float trail = na
+
+if (state == 0)
+    if (na(loss) == false)
+        state := 1
+        trail := close - loss
+    else
+        state := 0
+        trail := 0
+        
+if (state == 1)
+    if (close > trail[1])
+        state := 1
+        trail := max(trail[1], close - loss)
+    else
+        state := 2
+        trail := close + loss
+        
+if (state == 2)
+    if (close < trail[1])
+        state := 2
+        trail := min(trail[1], close + loss)
+    else
+        state := 1
+        trail := close - loss
+
+plot(trail)
+        
+
+
+    
